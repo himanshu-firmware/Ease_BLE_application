@@ -7,7 +7,7 @@
 
 #include "simpleble/SimpleBLE.h"
 
-#define  LOG_I(str, ...)    (std::cout<<str ##__VA_ARGS__ <<std::endl)
+#define  LOG_I(str, ...)    printf(str ##__VA_ARGS__ "\r\n")
 
 
 namespace Ease_device_disc
