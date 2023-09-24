@@ -2,10 +2,36 @@
 
 #include "utils.hpp"
 
-#include "simpleble/SimpleBLE.h"
+
+
+/// @brief  define the peripheral id 
+/// @param  void
+/// @return periperhal object 
+// SimpleBLE::Safe::Peripheral Ease_device_disc::EASE_DEVICE_DISC::get_peripheral_id(void)
+// {
+//     return this->peri_obj;
+// } 
+
+Ease_device_disc::EASE_DEVICE_DISC::EASE_DEVICE_DISC(void)
+{
+    LOG_I("constructor for easedevice disc");
+}
+
+Ease_device_disc::EASE_DEVICE_DISC::~EASE_DEVICE_DISC(void)
+{
+    LOG_I("desctructor for easedevice disc");
+}
+
+
 
 int Ease_device_disc::EASE_DEVICE_DISC::find_and_connect_ease(void)
 {
+    // if ( SimpleBLE::Safe::Adapter::bluetooth_enabled())
+    // {
+    //     LOG_I("BLuetooth is off please turn it on");
+    //     return EXIT_FAILURE;
+    // }
+
     ////////================================================================== get the adapters 
     /// first scan the adapters and get one 
     auto adapter_list = SimpleBLE::Safe::Adapter::get_adapters();
@@ -40,81 +66,55 @@ int Ease_device_disc::EASE_DEVICE_DISC::find_and_connect_ease(void)
     /// make a refrence to the adapter at the list of 1 item 
     SimpleBLE::Safe::Adapter &adapter = adapter_list->at(0);
 
+    /// create a list of peripheral object of class below that would be scanned by the adapter 
     std::vector<SimpleBLE::Safe::Peripheral> peripherals;
 
+
+    /// prepare the adapter to scan for devices 
     adapter.set_callback_on_scan_found([&](SimpleBLE::Safe::Peripheral peripheral)
                                        {
         std::cout << "Found device: " << peripheral.identifier().value_or("UNKNOWN") << " ["
                   << peripheral.address().value_or("UNKNOWN") << "]" << std::endl;
-        peripherals.push_back(peripheral); });
+        peripherals.push_back(peripheral); }
+        );
 
-    adapter.set_callback_on_scan_start([]()
+    adapter.set_callback_on_scan_start([](void)
                                        { std::cout << "Scan started." << std::endl; });
-    adapter.set_callback_on_scan_stop([]()
+    adapter.set_callback_on_scan_stop([](void)
                                       { std::cout << "Scan stopped." << std::endl; });
     // Scan for 5 seconds and return.
     adapter.scan_for(5000);
 
 
-
-
-
-}
-
-int main()
-{
-
-   
-
-    
-    std::cout << "The following devices were found:" << std::endl;
+    //// scan finished now search for device name EASE 
+    int Ease_index =-1;
     for (size_t i = 0; i < peripherals.size(); i++)
     {
+        if( peripherals[i].identifier().value_or("UNKNOWN") == "EASE")
+        {
+            Ease_index =i;
+            break;
+        }
         std::cout << "[" << i << "] " << peripherals[i].identifier().value_or("UNKNOWN") << " ["
                   << peripherals[i].address().value_or("UNKNOWN") << "]" << std::endl;
     }
 
-    auto selection = Utils::getUserInputInt("Please select a device to connect to", peripherals.size() - 1);
-    if (!selection.has_value())
+    if(Ease_index == -1)
     {
+        //// failed to serach the EASE
+        LOG_I("Ease device not found in the list ");
         return EXIT_FAILURE;
     }
+    // auto selection = Utils::getUserInputInt("Please select a device to connect to", peripherals.size() - 1);
+    // if (!selection.has_value())
+    // {
+    //     return EXIT_FAILURE;
+    // }
+    // peripheral.disconnect();
 
-    auto peripheral = peripherals[selection.value()];
-    std::cout << "Connecting to " << peripheral.identifier().value_or("UNKNOWN") << " ["
-              << peripheral.address().value_or("UNKNOWN") << "]" << std::endl;
-
-    // If the connection wasn't successful, no exception will be thrown.
-    bool connect_was_successful = peripheral.connect();
-    if (!connect_was_successful)
-    {
-        std::cout << "Failed to connect to " << peripheral.identifier().value_or("UNKNOWN") << " ["
-                  << peripheral.address().value_or("UNKNOWN") << "]" << std::endl;
-        return EXIT_FAILURE;
-    }
-
-    std::cout << "Successfully connected, listing services." << std::endl;
-    auto services = peripheral.services();
-
-    if (!services.has_value())
-    {
-        std::cout << "Failed to list services." << std::endl;
-        return EXIT_FAILURE;
-    }
-
-    for (auto service : *services)
-    {
-        std::cout << "Service: " << service.uuid() << std::endl;
-        for (auto characteristic : service.characteristics())
-        {
-            std::cout << "  Characteristic: " << characteristic.uuid() << std::endl;
-
-            for (auto &descriptor : characteristic.descriptors())
-            {
-                std::cout << "  Descriptor: " << descriptor.uuid() << std::endl;
-            }
-        }
-    }
-    peripheral.disconnect();
     return EXIT_SUCCESS;
+
+
 }
+
+
